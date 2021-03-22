@@ -1,0 +1,116 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class SnakeMovement : MonoBehaviour
+{
+    List<Transform> PrevTrans = new List<Transform>();
+    public List<Transform> BodyParts = new List<Transform>();
+    public Transform head;
+
+    public float mindistance = 0.25f;
+    public float speed = 5f;
+    public float rotationSpeed = 50f;
+    public int beginSize = 2;
+
+    public GameObject bodyPrefab;
+    public GameObject tail;
+    public Vector3 vector3;
+
+
+    float distance;
+    Transform curBodyPart;
+    Transform prevBodyPart;
+    int leftright;
+    bool rotate;
+    void Start()
+    {
+        for (int i = 0; i < beginSize ; i++)
+            AddBodyPart();
+        AddTail();
+    }
+
+    // Update is called once per frame
+    void FixedUpdate()
+    {
+        Move();
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            UpgradeSnake();
+        }
+    }
+
+    public void Move()
+    {
+        //if (Input.GetKey(KeyCode.W))
+        //{
+        //    BodyParts[0].Translate();
+        //    transform.Translate(BodyParts[0].forward * speed * Time.smoothDeltaTime, Space.World);
+        //}
+        head.Translate(head.forward * speed * Time.smoothDeltaTime, Space.World);
+
+        if (rotate)
+            head.Rotate(Vector3.up * rotationSpeed * Time.deltaTime * leftright);
+
+        for (int i = 1; i<BodyParts.Count; i++)
+        {
+            curBodyPart = BodyParts[i];
+            prevBodyPart = BodyParts[i - 1];
+
+            distance = Vector3.Distance(prevBodyPart.position, curBodyPart.position);
+            Vector3 newPos = prevBodyPart.position;
+            //newPos.y = BodyParts[0].position.y;
+            float T = Time.deltaTime * distance / mindistance ;
+            if (T > 0.5f)
+                T = 0.5f;
+            vector3 = Vector3.Slerp(curBodyPart.position, newPos, T);
+            curBodyPart.position = vector3;
+            curBodyPart.rotation = Quaternion.Slerp(curBodyPart.rotation, prevBodyPart.rotation, T);
+        }
+    }
+
+    public void AddBodyPart()
+    {
+        for (int i = 0; i <30; i++) 
+        {
+            Transform newpart = (Instantiate(bodyPrefab, BodyParts[BodyParts.Count - 1].position, BodyParts[BodyParts.Count - 1].rotation)
+                as GameObject).transform;
+
+            newpart.SetParent(transform);
+            BodyParts.Add(newpart); 
+        }
+    }
+    public void RemoveLast()
+    {
+        Destroy(BodyParts[BodyParts.Count -1].gameObject);
+        BodyParts.RemoveAt(BodyParts.Count - 1);
+    }
+
+    public void AddTail()
+    {
+        Transform tailpart = (Instantiate(tail, BodyParts[BodyParts.Count - 1].position, BodyParts[BodyParts.Count - 1].rotation)
+            as GameObject).transform;
+
+        tailpart.SetParent(transform);
+
+        BodyParts.Add(tailpart);
+    }
+    public void UpgradeSnake()
+    {
+        RemoveLast();
+        AddBodyPart();
+        AddTail();
+    }
+
+    public void RotateSnake(int lr)
+    {
+        rotate = true;
+        leftright = lr;
+    }
+
+    public void StopRotate()
+    {
+        rotate = false;
+    }
+}
